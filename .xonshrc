@@ -182,7 +182,7 @@ def _rcpull(args):
     parser = ArgumentParser(description='pull latest .xonshrc')
     args = parser.parse_args(args)
 
-    cd $WORKSETUP_ROOT/worksetup
+    cd $WORKSETUP_ROOT/linuxsetup
     ggpull
     cp .xonshrc ~/
     cd -
@@ -192,7 +192,7 @@ def _rcpush(args):
     parser = ArgumentParser(description='push latest .xonshrc')
     args = parser.parse_args(args)
 
-    cd $WORKSETUP_ROOT/worksetup
+    cd $WORKSETUP_ROOT/linuxsetup
     cp ~/.xonshrc .
     ga .xonshrc
     git commit -m 'update .xonshrc'
