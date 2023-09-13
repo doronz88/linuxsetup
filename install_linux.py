@@ -72,7 +72,7 @@ def install_packages():
                     'bash-completion', 'ripgrep', 'python-tk', 'nodejs', 'jq', 'tldr', 'vim', 'sublime-text',
                     'wireshark', 'terminator', 'net-tools', 'build-essential']
 
-    snap_packages = ['pycharm-community', 'code']
+    snap_packages = ['pycharm-community', 'code','ipsw']
 
     sudo('apt', 'update')
 
