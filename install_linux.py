@@ -70,7 +70,7 @@ def install_packages():
 
     apt_packages = ['git', 'git-lfs', 'cmake', 'openssl', 'bat', 'fzf', 'wget', 'htop', 'curl', 'ncdu', 'watch',
                     'bash-completion', 'ripgrep', 'python-tk', 'nodejs', 'jq', 'tldr', 'vim', 'sublime-text',
-                    'wireshark', 'terminator']
+                    'wireshark', 'terminator', 'net-tools', 'build-essential']
 
     snap_packages = ['pycharm-community', 'code']
 
