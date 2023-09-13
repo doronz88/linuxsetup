@@ -56,16 +56,30 @@ def git_clone(repo_url: str, branch='master'):
         os.chdir(cwd)
 
 
-def install_apt_packages():
-    logger.info('installing apt packages')
+def install_packages():
+    logger.info('installing packages')
 
-    packages = ['git', 'git-lfs', 'cmake', 'openssl', 'bat', 'fzf', 'wget', 'htop', 'curl', 'ncdu', 'watch',
-                'bash-completion', 'ripgrep', 'python-tk', 'nodejs', 'jq', 'tldr']
+    # add sublimehq to list of trusted keys
+    os.system(
+        'wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | gpg --dearmor | '
+        'sudo tee /etc/apt/trusted.gpg.d/sublimehq-archive.gpg > /dev/null')
+
+    # add sublime-text source
+    os.system('echo "deb https://download.sublimetext.com/ apt/stable/" | '
+              'sudo tee /etc/apt/sources.list.d/sublime-text.list')
+
+    apt_packages = ['git', 'git-lfs', 'cmake', 'openssl', 'bat', 'fzf', 'wget', 'htop', 'curl', 'ncdu', 'watch',
+                    'bash-completion', 'ripgrep', 'python-tk', 'nodejs', 'jq', 'tldr', 'vim', 'sublime-text']
+
+    snap_packages = ['pycharm-community', 'code']
 
     sudo('apt', 'update')
 
-    for package in packages:
+    for package in apt_packages:
         confirm_install(f'install {package}', sudo['apt', 'install', '--yes', package])
+
+    for package in snap_packages:
+        confirm_install(f'install {package}', sudo['snap', 'install', package, '--classic'])
 
 
 def install_python_packages():
@@ -106,7 +120,7 @@ def install_xonsh():
         DEV_PATH.mkdir(parents=True, exist_ok=True)
 
         os.chdir(DEV_PATH)
-        git_clone('git@github.com:doronz88/linuxsetup.git', 'main')
+        git_clone('git@github.com:doronz88/linuxsetup.git', 'master')
         cp('worksetup/.xonshrc', Path('~/').expanduser())
 
     confirm_install('set ready-made .xonshrc file', set_xonshrc)
@@ -135,7 +149,7 @@ def cli():
 @cli.command('apt-packages', cls=BaseCommand)
 def cli_apt_packages():
     """ Install selected apt packages """
-    install_apt_packages()
+    install_packages()
 
 
 @cli.command('python-packages', cls=BaseCommand)
@@ -153,7 +167,7 @@ def cli_xonsh():
 @cli.command('everything', cls=BaseCommand)
 def cli_everything():
     """ Install everything """
-    install_apt_packages()
+    install_packages()
     install_python_packages()
     install_xonsh()
 
