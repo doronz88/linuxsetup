@@ -1,6 +1,6 @@
 # Overview
 
-Setup script for quickly setting up macOS installations for a more efficient work computer.
+Setup script for quickly setting up linux installations for a more efficient work computer.
 
 <details>
 <summary>Show what installation includes</summary>
@@ -22,8 +22,8 @@ Setup script for quickly setting up macOS installations for a more efficient wor
 - PyCharm CE
 - Visual Studio Code
 - Sublime Text
-- Google Chrome
 - Wireshark
+- xonsh
 
 </details>
 
