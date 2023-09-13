@@ -122,7 +122,7 @@ def install_xonsh():
 
         os.chdir(DEV_PATH)
         git_clone('git@github.com:doronz88/linuxsetup.git', 'master')
-        cp('worksetup/.xonshrc', Path('~/').expanduser())
+        cp('linuxsetup/.xonshrc', Path('~/').expanduser())
 
     confirm_install('set ready-made .xonshrc file', set_xonshrc)
 
