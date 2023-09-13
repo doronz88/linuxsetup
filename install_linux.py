@@ -69,7 +69,8 @@ def install_packages():
               'sudo tee /etc/apt/sources.list.d/sublime-text.list')
 
     apt_packages = ['git', 'git-lfs', 'cmake', 'openssl', 'bat', 'fzf', 'wget', 'htop', 'curl', 'ncdu', 'watch',
-                    'bash-completion', 'ripgrep', 'python-tk', 'nodejs', 'jq', 'tldr', 'vim', 'sublime-text']
+                    'bash-completion', 'ripgrep', 'python-tk', 'nodejs', 'jq', 'tldr', 'vim', 'sublime-text',
+                    'wireshark']
 
     snap_packages = ['pycharm-community', 'code']
 

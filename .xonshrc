@@ -292,33 +292,27 @@ def _tarsplit(dirname: str):
     local['split', '-b', '3G', tarfile, prefix] & FG
 
 
-def _disable_watchdog():
-    """
-    Effectively macOS watchdogd
-    """
-    while True:
-        try:
-            local['sudo']('pkill', '-9', 'watchdogd')
-        except ProcessExecutionError:
-            pass
-        time.sleep(5)
+def exec_detached(command: str) -> None:
+    os.system(f'nohup {command} >/dev/null 2>&1')
+
+
+def _charm(args: List[str]) -> None:
+    path = args[0]
+    exec_detached(f'/snap/pycharm-community/current/bin/pycharm.sh "{path}"')
 
 
 # -- xonsh
 
 aliases['reload'] = 'source ~/.xonshrc'
-aliases['globalrc'] = 'code ~/.xonshrc'
-aliases['localrc'] = f'code {CUSTOM_RC}'
+aliases['globalrc'] = 'subl ~/.xonshrc'
+aliases['localrc'] = f'subl {CUSTOM_RC}'
 aliases['rcpull'] = _rcpull
 aliases['rcpush'] = _rcpush
 
 # -- apps
 
-aliases['subl'] = _subl
-aliases['010'] = 'open -b com.SweetScape.010Editor'
-aliases['charm'] = 'open -b com.jetbrains.pycharm.ce'
-aliases['ida'] = 'open -b com.hexrays.ida64'
-aliases['sqlitebrwoser'] = 'open -b net.sourceforge.sqlitebrowser'
+aliases['subl'] = '/opt/sublime_text/sublime_text'
+aliases['charm'] = _charm
 
 # -- checkra1n
 
@@ -354,7 +348,6 @@ aliases['rootca'] = ArgParserAlias(prog='rootca', has_args=True, func=_rootca)
 aliases['cert'] = ArgParserAlias(prog='cert', has_args=True, func=_cert)
 aliases['plshow'] = ArgParserAlias(prog='plshow', has_args=True, func=_plshow)
 aliases['tarsplit'] = ArgParserAlias(prog='tarsplit', has_args=True, func=_tarsplit)
-aliases['disable_watchdog'] = _disable_watchdog
 
 
 if CUSTOM_RC.exists():
