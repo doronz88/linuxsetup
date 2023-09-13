@@ -52,5 +52,5 @@ Setup script for quickly setting up linux installations for a more efficient wor
 
 ```shell
 # pass -a/--automated for doing everything without prompting (unless certain removals are required)
-python3.11 install_linux.py everything
+python3 install_linux.py everything
 ```
