@@ -1,0 +1,361 @@
+# XONSH WEBCONFIG START
+# XONSH WEBCONFIG END
+
+# -- modules
+
+import os
+import shlex
+import json
+import time
+import tempfile
+import plistlib
+from datetime import datetime
+from uuid import UUID
+from argparse import ArgumentParser
+from typing import List
+
+from pathlib import Path
+from pygments import highlight, formatters, lexers
+from pygments.style import Style
+from pygments.token import (Comment, Error, Generic, Name, Number, Operator, String, Text, Whitespace, Keyword, Literal, Other, Punctuation)
+from plumbum import local, FG
+from plumbum.commands.processes import ProcessExecutionError
+
+from xonsh.built_ins import XSH
+from xonsh.pyghooks import register_custom_pygments_style
+from xonsh.ansi_colors import register_custom_ansi_style
+from xonsh.cli_utils import ArgParserAlias, Arg, Annotated
+
+# -- XONTRIB
+if XSH.env.get('FORMATTER_DICT') is None:
+    XSH.env['FORMATTER_DICT'] = {}
+
+XSH.builtins.execx('xontrib load z argcomplete coreutils fzf-widgets jedi vox up')
+
+CUSTOM_RC = Path('~/.myrc').expanduser()
+# -- ENV
+# XSH.env['DEVICE_SSH_PORT'] = 2222
+XSH.env['WORKSETUP_ROOT'] = '~/dev'
+XSH.env['DEVICE_SSH_PORT'] = 4444
+XSH.env['PROMPT'] = '{env_name}{BOLD_GREEN}{user}@{hostname}{BOLD_BLUE} {cwd}{branch_color}{curr_branch: {}}{RESET} {BOLD_BLUE}{prompt_end}{RESET} '
+XSH.env['PATH'] = [
+ '~/.cargo/bin',
+ '/usr/local/opt/gnu-tar/libexec/gnubin',
+ '/usr/local/opt/make/libexec/gnubin',
+ '/usr/local/opt/openjdk/bin',
+ '/usr/local/opt/openssl@1.1/bin',
+ '/usr/libexec',
+ '/opt/homebrew/bin',
+ '/usr/local/bin',
+ '/Library/Frameworks/Python.framework/Versions/3.10/bin',
+ '/usr/sbin',
+ '/usr/bin',
+ '/opt/bin',
+ '/sbin',
+ '/bin',
+ '/Library/Apple/usr/bin',
+ '/Applications/Wireshark.app/Contents/MacOS',
+ '/usr/local/opt/fzf/bin',
+ '~/Library/Python/3.9/bin',
+ '~/Library/Python/3.8/bin',
+ '~/Library/Python/3.10/bin']
+XSH.env['PKG_CONFIG_PATH'] = '/usr/local/opt/openssl@1.1/lib/pkgconfig:/usr/local/opt/curl/lib/pkgconfig:/usr/local/opt/openssl/lib/pkgconfig:/usr/local/opt/readline/lib/pkgconfig'
+XSH.env['LDFLAGS'] = '-L/usr/local/opt/openssl@1.1/lib -L/usr/local/opt/openssl/lib -L/opt/homebrew/opt/openssl/lib'
+XSH.env['CFLAGS'] = '-I/usr/local/opt/openssl/include -I/opt/homebrew/opt/openssl/include'
+XSH.env['CPPFLAGS'] = "-I/usr/local/opt/openssl@1.1/include"
+XSH.env['LSCOLORS'] = 'Gxfxcxdxbxegedabagacad'
+
+
+XSH.env['fzf_history_binding'] = "c-r"  # Ctrl+R
+XSH.env['fzf_ssh_binding'] = "c-s"      # Ctrl+S
+XSH.env['fzf_file_binding'] = "c-t"      # Ctrl+T
+XSH.env['fzf_dir_binding'] = "c-g"      # Ctrl+G
+
+
+def _default_json_encoder(obj):
+    if isinstance(obj, bytes):
+        return '<' + obj.hex() + '>'
+    if isinstance(obj, datetime):
+        return str(obj)
+    if isinstance(obj, UUID):
+        return str(obj)
+    raise TypeError()
+
+
+def _pretty_json(buf, colored=True, default=_default_json_encoder):
+    formatted_json = json.dumps(buf, sort_keys=True, indent=4, default=default)
+    if colored:
+        return highlight(formatted_json, lexers.JsonLexer(), formatters.TerminalTrueColorFormatter(style='stata-dark'))
+    else:
+        return formatted_json
+
+
+# -- STYLE
+
+ANSI_STYLE = {
+    'BLACK': '#282828', 'BLUE': '#458588', 'CYAN': '#689D6A', 'DEFAULT': '#D4EB98', 'GREEN': '#98971A', 'ORANGE': '#D65D0E', 'PURPLE': '#b16286', 'RED': '#CC441D', 'WHITE': '#EBDBB2', 'YELLOW': '#D79921',
+    'INTENSE_BLACK': '#665C54', 'INTENSE_BLUE': '#83A598', 'INTENSE_CYAN': '#8EC07C', 'INTENSE_GREEN': '#b8bb26', 'INTENSE_ORANGE': '#fe8019', 'INTENSE_PURPLE': '#D3869B', 'INTENSE_RED': '#fb4934', 'INTENSE_WHITE': '#FBF1F7', 'INTENSE_YELLOW': '#FA8D2F',
+}
+
+BG_COLOR = ANSI_STYLE['BLACK']
+PG_STYLE = {
+    Comment: f'{ANSI_STYLE["INTENSE_CYAN"]} italic',
+
+    Error: f'{ANSI_STYLE["RED"]} bold',
+
+    Generic: f'{ANSI_STYLE["DEFAULT"]}',
+    Generic.Deleted: f'{ANSI_STYLE["INTENSE_BLACK"]}',
+    Generic.Emph: f'{ANSI_STYLE["WHITE"]}',
+    Generic.Error: f'{ANSI_STYLE["RED"]} bold',
+    Generic.Heading: f'{ANSI_STYLE["INTENSE_WHITE"]}',
+    Generic.Inserted: f'{ANSI_STYLE["INTENSE_WHITE"]}',
+    Generic.Output: '#44475A',
+    Generic.Prompt: f'{ANSI_STYLE["WHITE"]}',
+    Generic.Strong: f'{ANSI_STYLE["WHITE"]} bold',
+    Generic.Subheading: f'{ANSI_STYLE["INTENSE_WHITE"]}',
+    Generic.Traceback: f'{ANSI_STYLE["ORANGE"]}',
+
+    Keyword: f'{ANSI_STYLE["INTENSE_RED"]}',
+    Keyword.Content: f'{ANSI_STYLE["INTENSE_RED"]}',
+    Keyword.Declaration: f'{ANSI_STYLE["INTENSE_RED"]}',
+    Keyword.Namespace: f'{ANSI_STYLE["RED"]} bold',
+    Keyword.Pseudo: f'{ANSI_STYLE["INTENSE_RED"]}',
+    Keyword.Reserved: f'{ANSI_STYLE["INTENSE_CYAN"]}',
+    Keyword.Type: f'{ANSI_STYLE["YELLOW"]}',
+
+    Literal: f'{ANSI_STYLE["INTENSE_WHITE"]}',
+    Literal.Date: f'{ANSI_STYLE["INTENSE_WHITE"]}',
+
+    Name: f'{ANSI_STYLE["INTENSE_BLUE"]}',
+    Name.Attribute: f'{ANSI_STYLE["INTENSE_CYAN"]}',
+    Name.Builtin: f'{ANSI_STYLE["INTENSE_YELLOW"]} bold',
+    Name.Builtin.Pseudo: f'{ANSI_STYLE["INTENSE_ORANGE"]}',
+    Name.Class: f'{ANSI_STYLE["INTENSE_ORANGE"]} underline',
+    Name.Constant: f'{ANSI_STYLE["PURPLE"]}',
+    Name.Decorator: f'{ANSI_STYLE["INTENSE_RED"]}',
+    Name.Entity: f'{ANSI_STYLE["INTENSE_WHITE"]}',
+    Name.Exception: f'{ANSI_STYLE["INTENSE_PURPLE"]}',
+    Name.Function: f'{ANSI_STYLE["INTENSE_CYAN"]} bold',
+    Name.Label: f'{ANSI_STYLE["INTENSE_RED"]}',
+    Name.Namespace: f'{ANSI_STYLE["INTENSE_GREEN"]}',
+    Name.Other: f'{ANSI_STYLE["WHITE"]}',
+    Name.Variable: f'{ANSI_STYLE["WHITE"]}',
+    Name.Variable.Class: f'{ANSI_STYLE["BLUE"]} italic',
+    Name.Variable.Global: f'{ANSI_STYLE["BLUE"]} italic',
+    Name.Variable.Instance: f'{ANSI_STYLE["BLUE"]} italic',
+
+    Number: f'{ANSI_STYLE["INTENSE_PURPLE"]}',
+
+    Operator: f'{ANSI_STYLE["WHITE"]}',
+    Operator.Word: f'{ANSI_STYLE["RED"]}',
+
+    Other: ANSI_STYLE['WHITE'],
+    Punctuation: ANSI_STYLE['WHITE'],
+
+    String: f'{ANSI_STYLE["INTENSE_GREEN"]}',
+
+    Text: f'{ANSI_STYLE["WHITE"]}',
+
+    Whitespace: f'{ANSI_STYLE["WHITE"]}',
+}
+
+register_custom_pygments_style('doronz', PG_STYLE, background_color=BG_COLOR)
+register_custom_ansi_style('doronz', ANSI_STYLE)
+
+XSH.env['XONSH_COLOR_STYLE'] = 'doronz'
+
+
+# -- ALIAS
+
+def _get_file(args):
+    scp -i "~/.ssh/id_rsa" -r -P $DEVICE_SSH_PORT root@localhost:@(args[0]) @(args[1])
+
+
+def _put_file(args):
+    scp -i "~/.ssh/id_rsa" -r -P $DEVICE_SSH_PORT @(args[0]) root@localhost:@(args[1])
+
+
+def _localdevice(args):
+    ssh -p $DEVICE_SSH_PORT root@localhost -i ~/.ssh/id_rsa
+
+
+def _ggpush(args):
+    XSH.builtins.execx(f'git push origin {XSH.env["PROMPT_FIELDS"]["curr_branch"]()} {shlex.join(args)}')
+
+
+def _subl(args):
+    if 0 != os.system(f'open -b com.sublimetext.4 "{args[0]}"'):
+        os.system(f'open -b com.sublimetext.3 "{args[0]}"')
+
+
+def _rcpull(args):
+    parser = ArgumentParser(description='pull latest .xonshrc')
+    args = parser.parse_args(args)
+
+    cd $WORKSETUP_ROOT/worksetup
+    ggpull
+    cp .xonshrc ~/
+    cd -
+
+
+def _rcpush(args):
+    parser = ArgumentParser(description='push latest .xonshrc')
+    args = parser.parse_args(args)
+
+    cd $WORKSETUP_ROOT/worksetup
+    cp ~/.xonshrc .
+    ga .xonshrc
+    git commit -m 'update .xonshrc'
+    ggpush
+    cd -
+
+
+def _rootca(cn: str, key: str, cert: str):
+    """ Generate Root CA """
+    XSH.builtins.execx(f'openssl req -x509 -newkey rsa:2048 -keyout {key} -out {cert} -sha256 -days 365 -nodes -subj /CN={cn}')
+
+
+def _cert(cn: str, key: str, cer: str, csr: str, root_key: str, root_cer: str, ip: Annotated[List[str], Arg(nargs='+')], dns: Annotated[List[str], Arg(nargs='+')]):
+    """
+    Generate SSL Certificate
+
+    Parameters
+    ----------
+    cn
+        CN (CommonName)
+    key
+        Private key file to create
+    cer
+        Certificate file to create (Public Key)
+    csr
+        CSR file to create
+    root_key
+        Root CA Private Key
+    root_cer
+        Root CA Public Key (Certificate)
+    ip : --ip
+        IP list
+    dns : --dns
+        DNS list
+    """
+    XSH.builtins.execx(f'openssl genrsa -out {key} 2048')
+    XSH.builtins.execx(f'openssl req -new -out {csr} -key {key} -subj /CN={cn}')
+    with tempfile.NamedTemporaryFile('w+t') as f:
+            lines = ['authorityKeyIdentifier=keyid,issuer\n',
+                'basicConstraints=CA:FALSE\n',
+                'keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment\n',
+                'subjectAltName = @alt_names\n',
+                '\n',
+                '[alt_names]\n']
+            if ip is not None:
+                for ip_ in ip:
+                    lines += f'IP.1 = {ip_}\n'
+            if dns is not None:
+                for dns_ in dns:
+                    lines += f'DNS.1 = {dns_}\n'
+            f.writelines(lines)
+            f.flush()
+            cmd = f'openssl x509 -req -in {csr} -CA {root_cer} -CAkey {root_key} -CAcreateserial -out {cer} -days 825 -sha256'
+            print(cmd)
+            if ip is not None or dns is not None:
+                cmd += f' -extfile {f.name}'
+            XSH.builtins.execx(cmd)
+
+
+def _plshow(filename: str, uncolored=False):
+    """
+    display a plist file
+
+    Parameters
+    ----------
+    uncolored : -u, --uncolored
+        remove colors
+    """
+    with open(filename, 'rb') as f:
+        return _pretty_json(plistlib.load(f), colored=(not uncolored))
+
+
+def _tarsplit(dirname: str):
+    """
+    archives given directory and splits into out
+
+    """
+    dirname = Path(dirname)
+
+    if not dirname.is_dir():
+        print(f'{dirname} is not a directory')
+        return 1
+
+    tarfile = f'{dirname}.tar'
+
+    local['tar']['-cvf', tarfile, dirname] & FG
+    local['split', '-b', '3G', tarfile, prefix] & FG
+
+
+def _disable_watchdog():
+    """
+    Effectively macOS watchdogd
+    """
+    while True:
+        try:
+            local['sudo']('pkill', '-9', 'watchdogd')
+        except ProcessExecutionError:
+            pass
+        time.sleep(5)
+
+
+# -- xonsh
+
+aliases['reload'] = 'source ~/.xonshrc'
+aliases['globalrc'] = 'code ~/.xonshrc'
+aliases['localrc'] = f'code {CUSTOM_RC}'
+aliases['rcpull'] = _rcpull
+aliases['rcpush'] = _rcpush
+
+# -- apps
+
+aliases['subl'] = _subl
+aliases['010'] = 'open -b com.SweetScape.010Editor'
+aliases['charm'] = 'open -b com.jetbrains.pycharm.ce'
+aliases['ida'] = 'open -b com.hexrays.ida64'
+aliases['sqlitebrwoser'] = 'open -b net.sourceforge.sqlitebrowser'
+
+# -- checkra1n
+
+aliases['get_file'] = _get_file
+aliases['put_file'] = _put_file
+aliases['localdevice'] = _localdevice
+
+# -- git
+
+aliases['ga'] = 'git add'
+aliases['ggpush'] = _ggpush
+aliases['gco'] = 'git checkout'
+aliases['ggpull'] = 'git pull'
+aliases['glog'] = 'git log --oneline --decorate --graph'
+aliases['gd'] = 'git diff'
+aliases['gst'] = 'git status'
+aliases['gcl'] = 'git clone --recurse-submodules'
+
+# -- shell
+aliases['t'] = 'tree'
+aliases['l'] = 'ls -lah'
+aliases['la'] = 'ls -lAh'
+aliases['ll'] = 'ls -lh'
+aliases['ls'] = 'ls -FG'
+aliases['lsa'] = 'ls -lah'
+aliases['grt'] = lambda: os.chdir($(git rev-parse --show-toplevel).strip())
+
+# -- tools
+
+aliases['pymobiledevice3'] = 'python3 -m pymobiledevice3'
+aliases['rpcclient'] = 'python3 -m rpcclient'
+aliases['rootca'] = ArgParserAlias(prog='rootca', has_args=True, func=_rootca)
+aliases['cert'] = ArgParserAlias(prog='cert', has_args=True, func=_cert)
+aliases['plshow'] = ArgParserAlias(prog='plshow', has_args=True, func=_plshow)
+aliases['tarsplit'] = ArgParserAlias(prog='tarsplit', has_args=True, func=_tarsplit)
+aliases['disable_watchdog'] = _disable_watchdog
+
+
+if CUSTOM_RC.exists():
+    XSH.builtins.execx(f'source {CUSTOM_RC}')
