@@ -39,26 +39,16 @@ XSH.env['WORKSETUP_ROOT'] = '~/dev'
 XSH.env['DEVICE_SSH_PORT'] = 4444
 XSH.env['PROMPT'] = '{env_name}{BOLD_GREEN}{user}@{hostname}{BOLD_BLUE} {cwd}{branch_color}{curr_branch: {}}{RESET} {BOLD_BLUE}{prompt_end}{RESET} '
 XSH.env['PATH'] = [
+ '~/.local/bin',
  '~/.cargo/bin',
- '/usr/local/opt/gnu-tar/libexec/gnubin',
- '/usr/local/opt/make/libexec/gnubin',
- '/usr/local/opt/openjdk/bin',
- '/usr/local/opt/openssl@1.1/bin',
  '/usr/libexec',
- '/opt/homebrew/bin',
  '/usr/local/bin',
- '/Library/Frameworks/Python.framework/Versions/3.10/bin',
  '/usr/sbin',
  '/usr/bin',
  '/opt/bin',
  '/sbin',
  '/bin',
- '/Library/Apple/usr/bin',
- '/Applications/Wireshark.app/Contents/MacOS',
- '/usr/local/opt/fzf/bin',
- '~/Library/Python/3.9/bin',
- '~/Library/Python/3.8/bin',
- '~/Library/Python/3.10/bin']
+ '/usr/local/opt/fzf/bin']
 XSH.env['PKG_CONFIG_PATH'] = '/usr/local/opt/openssl@1.1/lib/pkgconfig:/usr/local/opt/curl/lib/pkgconfig:/usr/local/opt/openssl/lib/pkgconfig:/usr/local/opt/readline/lib/pkgconfig'
 XSH.env['LDFLAGS'] = '-L/usr/local/opt/openssl@1.1/lib -L/usr/local/opt/openssl/lib -L/opt/homebrew/opt/openssl/lib'
 XSH.env['CFLAGS'] = '-I/usr/local/opt/openssl/include -I/opt/homebrew/opt/openssl/include'
