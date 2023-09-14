@@ -56,9 +56,7 @@ def git_clone(repo_url: str, branch='master'):
         os.chdir(cwd)
 
 
-def install_packages():
-    logger.info('installing packages')
-
+def add_sublim_ppa() -> None:
     # add sublimehq to list of trusted keys
     os.system(
         'wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | gpg --dearmor | '
@@ -68,13 +66,25 @@ def install_packages():
     os.system('echo "deb https://download.sublimetext.com/ apt/stable/" | '
               'sudo tee /etc/apt/sources.list.d/sublime-text.list')
 
+
+def install_packages():
+    logger.info('installing packages')
+
+    confirm_install(f'install sublime-text ppa', add_sublim_ppa)
+
+    ppas = ['ppa:ettusresearch/uhd', 'ppa:deadsnakes/ppa', 'ppa:wireshark-dev/stable']
+
     apt_packages = ['git', 'git-lfs', 'cmake', 'openssl', 'bat', 'fzf', 'wget', 'htop', 'curl', 'ncdu', 'watch',
                     'bash-completion', 'ripgrep', 'python-tk', 'nodejs', 'jq', 'tldr', 'vim', 'sublime-text',
-                    'wireshark', 'terminator', 'net-tools', 'build-essential']
+                    'wireshark', 'terminator', 'net-tools', 'build-essential', 'libtool', 'libusb-dev', 'libfcl-dev',
+                    'libudev-dev']
 
     snap_packages = ['pycharm-community', 'code','ipsw']
 
     sudo('apt', 'update')
+
+    for ppa in ppas:
+        confirm_install(f'install {ppa}', sudo['add-apt-repository', '-y', ppa])
 
     for package in apt_packages:
         confirm_install(f'install {package}', sudo['apt', 'install', '--yes', package])
@@ -147,9 +157,9 @@ def cli():
     pass
 
 
-@cli.command('apt-packages', cls=BaseCommand)
-def cli_apt_packages():
-    """ Install selected apt packages """
+@cli.command('packages', cls=BaseCommand)
+def cli_packages():
+    """ Install selected packages """
     install_packages()
 
 
