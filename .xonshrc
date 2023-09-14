@@ -284,7 +284,8 @@ def _tarsplit(dirname: str):
 
 
 def exec_detached(command: str) -> None:
-    os.system(f'nohup {command} >/dev/null 2>&1')
+    os.system(f'{command} &>/dev/null &')
+    os.system('disown')
 
 
 def _charm(args: List[str]) -> None:
