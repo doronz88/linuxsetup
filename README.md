@@ -32,7 +32,7 @@ Setup script for quickly setting up linux installations for a more efficient wor
 - Execute:
     ```shell
     sudo apt update
-    sudo apt install python3 python3-git git
+    sudo apt install python3 python3-pip git
     ssh-keygen
     cat ~/.ssh/id_rsa.pub
     ```

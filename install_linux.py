@@ -77,7 +77,7 @@ def install_packages():
     apt_packages = ['git', 'git-lfs', 'cmake', 'openssl', 'bat', 'fzf', 'wget', 'htop', 'curl', 'ncdu', 'watch',
                     'bash-completion', 'ripgrep', 'python-tk', 'nodejs', 'jq', 'tldr', 'vim', 'sublime-text',
                     'wireshark', 'terminator', 'net-tools', 'build-essential', 'libtool', 'libusb-dev', 'libfcl-dev',
-                    'libudev-dev']
+                    'libudev-dev', 'libssl-dev', 'python2-dev', 'checkinstall', 'automake']
 
     snap_packages = ['pycharm-community', 'code','ipsw']
 
