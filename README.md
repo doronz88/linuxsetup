@@ -45,12 +45,12 @@ Setup script for quickly setting up linux installations for a more efficient wor
   cd ~/dev
   git clone git@github.com:doronz88/linuxsetup.git
   cd linuxsetup
-  python3 -m pip install -r requirements.txt
+  python3.11 -m pip install -r requirements.txt
   ```
 
 # Usage
 
 ```shell
 # pass -a/--automated for doing everything without prompting (unless certain removals are required)
-python3 install_linux.py everything
+python3.11 install_linux.py everything
 ```

@@ -30,7 +30,7 @@ AUTOMATION_MODE = False
 
 
 def confirm_install(component: str, installer: Callable):
-    if AUTOMATION_MODE or inquirer3.confirm(f'To {component}?', default=False, show_default=True):
+    if AUTOMATION_MODE or inquirer3.confirm(f'To {component}?', default=False):
         installer()
 
 
@@ -108,18 +108,20 @@ def install_python_packages():
 def install_xonsh():
     logger.info('installing xonsh')
 
-    confirm_install('upgrade pip', python3['-m', 'pip', 'install', '-U', 'pip'])
+    confirm_install('upgrade pipx', python3['-m', 'pip', 'install', '-U', 'pipx'])
 
-    python3('-m', 'pip', 'install', '-U', 'xonsh')
+    pipx = local['pipx']
+    pipx('install', 'xonsh', '--force')
 
-    confirm_install(f'install xonsh attributes', python3['-m', 'pip', 'install', '-U', 'xontrib-argcomplete',
-    'xontrib-fzf-widgets', 'xontrib-z', 'xontrib-up', 'xontrib-vox', 'xontrib-jedi'])
+    confirm_install(f'install xonsh xontribs', pipx['runpip', 'xonsh', 'install', '-U', 'xontrib-argcomplete',
+    'xontrib-fzf-widgets', 'xontrib-zoxide', 'xontrib-vox', 'xontrib-jedi'])
 
     xonsh_path = shutil.which('xonsh')
     if xonsh_path not in open('/etc/shells', 'r').read():
         sudo('sh', '-c', f'echo {xonsh_path} >> /etc/shells')
 
     confirm_install('install/reinstall fzf', sudo['apt', 'install', '--yes', 'fzf'])
+    confirm_install('install/reinstall zoxide', sudo['apt', 'install', '--yes', 'zoxide'])
     confirm_install('install/reinstall bash-completion', sudo['apt', 'install', '--yes', 'bash-completion'])
 
     def change_shell() -> None:
